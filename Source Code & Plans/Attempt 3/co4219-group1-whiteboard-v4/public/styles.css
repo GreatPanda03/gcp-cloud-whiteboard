@@ -1,0 +1,27 @@
+body {
+    padding: 10px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 18px;
+    width: 100%;
+}
+
+#header-title {
+    padding: 5px;
+    text-align: center;
+    font-weight: bold;
+    background-color: #EEE;
+}
+
+canvas {
+    touch-action: none;
+}
+
+#controls {
+    margin: 8px 0;
+    padding: 5px;
+    align-items: center;
+}
+
+#controls div {
+    margin-right: 8px;
+}

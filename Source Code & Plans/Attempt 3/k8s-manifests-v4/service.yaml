@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: whiteboard-service
+spec:
+  type: LoadBalancer       # GCP provisions a public IP
+  selector:
+    app: whiteboard
+  ports:
+    - port: 80            # External port
+      targetPort: 3000    # Container port
+      protocol: TCP

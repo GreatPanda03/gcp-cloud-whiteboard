@@ -1,0 +1,15 @@
+{
+    "name": "distributed-whiteboard",
+    "version": "3.1.0",
+    "description": "This is a simple web-based whiteboard application build with Node.js and Socket.IO, designed to operate with a Redis cache.",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "@socket.io/redis-adapter": "^7.1.0",
+        "express": "^4.18.2",
+        "redis": "^4.6.7",
+        "socket.io": "^4.7.1"
+    }
+}

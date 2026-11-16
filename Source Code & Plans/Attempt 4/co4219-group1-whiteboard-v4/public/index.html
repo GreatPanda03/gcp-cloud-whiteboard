@@ -1,0 +1,194 @@
+<!doctype html>
+
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>CO4219 - Distributed Whiteboard</title>
+
+    <!-- general resources -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- relative to "public" -->
+    <script src="client.js" defer></script>
+    <link rel="stylesheet" href="styles.css"/> 
+</head>
+<body>
+    <div>
+        <h2 id="header-title">CO4219 ~ Distributed Whiteboard</h2>
+        <hr>
+        <div id="description">
+            <p>
+                This is a simple distributed whiteboard application built using Node.js, Socket.io, and Redis, hosted with Google Cloud.
+                Multiple users can modify the whiteboard simultaneously, and changes are synchronised in real time.
+                It includes basic drawing capabilities, like free-form drawing, lines, shapes, and the ability to clear the whiteboard.
+            </p>
+            <p>
+                For more information on how to use the whiteboard, please see the "Help" option below.
+            </p>
+        </div>
+    </div>
+
+    <div>
+        <div id="controls" class="d-flex flex-row flex-wrap">
+
+            <!-- group 1 (movement) -->
+            <div class="d-flex flex-row mt-2">
+                <div id="controls-move">
+                    <button id="move" type="button" class="btn btn-secondary">
+                        <i class="bi bi-arrows-move"></i>
+                        <br/>Move
+                    </button>
+                </div>
+
+                <div id="controls-recentre">
+                    <button id="recentre" type="button" class="btn btn-secondary">
+                        <i class="bi bi-aspect-ratio"></i>
+                        <br/>Recentre
+                    </button>
+                </div>
+            </div>
+            
+            <!-- group 2 (paint / erase) -->
+            <div class="d-flex flex-row mt-2">
+                <div id="controls-paint">
+                    <button id="paint" type="button" class="btn btn-secondary">
+                        <i class="bi bi-brush"></i>
+                        <br/>Paint
+                    </button>
+                </div>
+
+                <div id="controls-erase">
+                    <button id="erase" type="button" class="btn btn-secondary">
+                        <i class="bi bi-eraser"></i>
+                        <br/>Erase
+                    </button>
+                </div>
+            </div>
+
+            <!-- group 3 (shapes) -->
+            <div class="d-flex flex-row mt-2">
+                <div id="controls-line">
+                    <button id="line" type="button" class="btn btn-secondary">
+                        <i class="bi bi-slash-lg"></i>
+                        <br/>Line
+                    </button>
+                </div>
+
+                <div id="controls-rectangle">
+                    <button id="rectangle" type="button" class="btn btn-secondary">
+                        <i class="bi bi-square"></i>
+                        <br/>Rectangle
+                    </button>
+                </div>
+
+                <div id="controls-ellipse">
+                    <button id="ellipse" type="button" class="btn btn-secondary">
+                        <i class="bi bi-circle"></i>
+                        <br/>Ellipse
+                    </button>
+                </div>
+            </div>
+
+            <!-- group 4 (text) -->
+            <div class="d-flex flex-row mt-2">
+                <div class="d-flex flex-row"> <!-- nested -->
+                    <div id="controls-text">
+                        <button id="text" type="button" class="btn btn-secondary">
+                            <i class="bi bi-fonts"></i>
+                            <br/>Text
+                        </button>
+                    </div>
+                    <input type="text" class="form-control" id="text-message" placeholder="Text">
+                </div>
+            </div>
+            
+            <!-- group 5 (clearing) -->
+            <div class="d-flex flex-row mt-2">
+                <div id="controls-clear">
+                    <button id="clear" type="button" class="btn btn-danger">
+                        <i class="bi bi-trash3"></i>
+                        <br/>Clear
+                    </button>
+                </div>
+            </div>
+        
+            <!-- group 6 (help) 
+                NOTE: modal data attributes must have "bs" in them as of v5!
+                * source: https://stackoverflow.com/questions/17142790/
+            -->
+            <div class="d-flex flex-row mt-2">
+                <div id="controls-help">
+                    <button id="help" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#help-popup">
+                        <i class="bi bi-question-circle"></i>
+                        <br/>Help
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="m-2">
+            <button class="btn btn-secondary">
+                <i class="bi bi-eyedropper"></i>
+                <input id="paint-colour" type="color" class="btn btn-secondary p-0" value="#000000">
+                <br/>Colour
+            </button>
+
+            <input id="paint-width" type="range" min="1" max="50" value="3">
+        </div>
+
+        <!-- set canvas dimensions directly, NOT through CSS! -->
+        <canvas id="canvas" class="rounded-3 border border-secondary" height="500" width="900"></canvas>
+        
+        <div hidden>
+            <span><b>Connected Users:</b> 999</span>
+        </div>
+    </div>
+
+    <!-- help popup -->
+    <div id="help-popup" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" style="text-align: center;">Using the Whiteboard</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul>
+                        <li>Select a tool from the toolbar to start drawing</li>
+                        <li>Click and drag on the canvas to draw shapes or erase</li>
+                        <li>Use the colour picker to change the drawing colour.</li>
+                        <li>Adjust the brush width using the width input</li>
+                        <li>Click the clear button to erase the entire canvas</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- help popup -->
+    <div id="help-popup" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" style="text-align: center;">Using the Whiteboard</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul>
+                        <li>Select a tool from the toolbar to start drawing</li>
+                        <li>Click and drag on the canvas to draw shapes or erase</li>
+                        <li>Use the colour picker to change the drawing colour.</li>
+                        <li>Adjust the brush width using the width input</li>
+                        <li>Click the clear button to erase the entire canvas</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

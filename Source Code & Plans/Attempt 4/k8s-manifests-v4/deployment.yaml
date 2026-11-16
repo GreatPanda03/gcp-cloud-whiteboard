@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whiteboard-app
+spec:
+  replicas: 3 # NOTE: overridden by HPA if applied
+  selector:
+    matchLabels:
+      app: whiteboard
+  template:
+    metadata:
+      labels:
+        app: whiteboard
+    spec:
+      containers:
+        - name: whiteboard
+          # MAIN image - change version accordingly
+          image: europe-west2-docker.pkg.dev/co4219-whiteboard-project/my-repo/co4219-group1-whiteboard:3.2.0
+          ports:
+            - containerPort: 3000
+          env:
+            - name: REDIS_HOST
+              value: "10.147.253.53" # memorystore WRITE endpoint
+            - name: REDIS_PORT
+              value: "6379"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: # used by HPA to autoscale
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
